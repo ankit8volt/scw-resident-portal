@@ -1,0 +1,17 @@
+## Project
+SCW Villaments RWA Community Portal.
+
+Stack: Next.js App Router, TypeScript, CSS Variables, SWR, NextAuth v5, googleapis.
+
+## Key references
+- Product requirements: SCW_Villaments_Portal_PRD_v1.2.pdf
+- Design system: design-system.html
+- Type definitions: src/types/index.ts
+- Sheets client: src/lib/sheets.ts
+
+## Rules
+- Use strict TypeScript and avoid `any`.
+- Keep Google service account access server-side only.
+- Use only CSS token variables from `src/app/globals.css`.
+- Protect write APIs with session and role checks.
+- Return `{ error: string }` payloads for API failures.
