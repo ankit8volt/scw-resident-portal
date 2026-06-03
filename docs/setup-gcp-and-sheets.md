@@ -17,22 +17,11 @@ Create one spreadsheet and set `GOOGLE_SHEETS_ID`.
 Then run:
 
 ```bash
-npx tsx scripts/seed-sheet-headers.ts
+npm run seed:sheets
+npm run validate:sheets
 ```
 
-This creates/updates all 11 required tabs and row-1 headers:
-
-- Users
-- Projects
-- Project Updates
-- Announcements
-- Polls
-- Votes
-- Documents
-- Suggestions
-- Suggestion Upvotes
-- Config
-- Audit Log
+`validate:sheets` adds dropdown data validation on enum columns (Role, Status, Category, etc.) for rows 2–5000.
 
 ## 3) Config tab seed values
 

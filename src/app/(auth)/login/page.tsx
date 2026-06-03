@@ -9,7 +9,7 @@ const statusMap: Record<string, { title: string; message: string }> = {
   pending: {
     title: 'Account Pending Approval',
     message:
-      'Your Google sign-in is complete. A Super Admin must approve your account before portal access.',
+      'Your Google sign-in and residence details are saved. A Super Admin will review your tower and villament number before granting portal access.',
   },
   rejected: {
     title: 'Access Rejected',

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "seed:sheets": "tsx scripts/seed-sheet-headers.ts"
+    "seed:sheets": "tsx scripts/seed-sheet-headers.ts",
+    "validate:sheets": "tsx scripts/apply-sheet-validations.ts"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.0",

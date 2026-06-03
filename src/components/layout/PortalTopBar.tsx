@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
 import { BrandLogo } from '@/components/layout/BrandLogo';
+import { formatResidenceLabel } from '@/lib/residence-options';
 import { cn } from '@/lib/utils';
 
 const pageTitles: Record<string, string> = {
@@ -20,12 +21,21 @@ const pageTitles: Record<string, string> = {
 
 type PortalTopBarProps = {
   role: string;
+  tower?: string;
+  villamentNumber?: string;
   flatNumber?: string;
   showAdmin: boolean;
   signOutAction: () => Promise<void>;
 };
 
-export function PortalTopBar({ role, flatNumber, showAdmin, signOutAction }: PortalTopBarProps) {
+export function PortalTopBar({
+  role,
+  tower,
+  villamentNumber,
+  flatNumber,
+  showAdmin,
+  signOutAction,
+}: PortalTopBarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
@@ -41,6 +51,13 @@ export function PortalTopBar({ role, flatNumber, showAdmin, signOutAction }: Por
 
   const title =
     Object.entries(pageTitles).find(([path]) => pathname.startsWith(path))?.[1] ?? 'Dashboard';
+
+  const residenceLabel =
+    tower && villamentNumber
+      ? formatResidenceLabel(tower, villamentNumber)
+      : flatNumber
+        ? `Flat ${flatNumber}`
+        : role;
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-white">
@@ -72,9 +89,7 @@ export function PortalTopBar({ role, flatNumber, showAdmin, signOutAction }: Por
               <User className="h-4 w-4" />
             </div>
             <div className="text-sm">
-              <div className="font-medium text-foreground">
-                {flatNumber ? `Flat ${flatNumber}` : role}
-              </div>
+              <div className="font-medium text-foreground">{residenceLabel}</div>
               <div className="text-xs text-muted-foreground">{role}</div>
             </div>
           </div>

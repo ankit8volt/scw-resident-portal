@@ -7,19 +7,30 @@ import useSWR from 'swr';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { fetcher } from '@/hooks/fetcher';
-import type { User } from '@/types';
+import { formatResidenceLabel, hasCompleteResidence } from '@/lib/residence-options';
+import type { User, UserRole, UserStatus } from '@/types';
 
 export default function AdminPage() {
   const [busyEmail, setBusyEmail] = useState('');
   const { data, mutate, error } = useSWR<User[]>('/api/users', fetcher);
 
-  async function updateUser(email: string, status: string, role: string, flatNumber: string) {
-    setBusyEmail(email);
+  async function updateUser(
+    user: User,
+    status: UserStatus,
+    role: UserRole,
+  ) {
+    setBusyEmail(user.email);
     try {
       await fetch('/api/users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, status, role, flatNumber }),
+        body: JSON.stringify({
+          email: user.email,
+          status,
+          role,
+          tower: user.tower,
+          villamentNumber: user.villamentNumber,
+        }),
       });
       await mutate();
     } finally {
@@ -51,36 +62,49 @@ export default function AdminPage() {
         </div>
 
         <div className="space-y-4">
-          {(data || []).map((user) => (
-            <article
-              key={user.email}
-              className="rounded-xl border border-border bg-white p-6"
-            >
-              <h3 className="text-lg font-semibold text-foreground">{user.name || user.email}</h3>
-              <p className="mb-4 text-sm text-muted-foreground">
-                {user.email} · Flat {user.flatNumber || 'N/A'} · {user.role} · {user.status}
-              </p>
-              {user.status === 'Pending' ? (
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    disabled={busyEmail === user.email}
-                    onClick={() => updateUser(user.email, 'Approved', 'Resident', user.flatNumber)}
-                  >
-                    Approve as Resident
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    disabled={busyEmail === user.email}
-                    onClick={() =>
-                      updateUser(user.email, 'Rejected', user.role, user.flatNumber)
-                    }
-                  >
-                    Reject
-                  </Button>
-                </div>
-              ) : null}
-            </article>
-          ))}
+          {(data || []).map((user) => {
+            const residence =
+              user.tower && user.villamentNumber
+                ? formatResidenceLabel(user.tower, user.villamentNumber)
+                : user.flatNumber || 'Not provided';
+            const profileReady = hasCompleteResidence(user.tower, user.villamentNumber);
+
+            return (
+              <article
+                key={user.email}
+                className="rounded-xl border border-border bg-white p-6"
+              >
+                <h3 className="text-lg font-semibold text-foreground">{user.name || user.email}</h3>
+                <p className="mb-1 text-sm text-muted-foreground">{user.email}</p>
+                <p className="mb-4 text-sm text-foreground">
+                  <span className="font-medium">Residence:</span> {residence} · {user.role} ·{' '}
+                  {user.status}
+                </p>
+                {user.status === 'Pending' && !profileReady ? (
+                  <p className="mb-4 text-sm text-destructive">
+                    Waiting for resident to select tower and villament number.
+                  </p>
+                ) : null}
+                {user.status === 'Pending' ? (
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      disabled={busyEmail === user.email || !profileReady}
+                      onClick={() => updateUser(user, 'Approved', 'Resident')}
+                    >
+                      Approve as Resident
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      disabled={busyEmail === user.email}
+                      onClick={() => updateUser(user, 'Rejected', user.role)}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
         </div>
       </div>
     </div>

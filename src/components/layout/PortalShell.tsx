@@ -3,6 +3,8 @@ import { PortalTopBar } from '@/components/layout/PortalTopBar';
 
 type PortalShellProps = {
   role: string;
+  tower?: string;
+  villamentNumber?: string;
   flatNumber?: string;
   showAdmin: boolean;
   signOutAction: () => Promise<void>;
@@ -11,6 +13,8 @@ type PortalShellProps = {
 
 export function PortalShell({
   role,
+  tower,
+  villamentNumber,
   flatNumber,
   showAdmin,
   signOutAction,
@@ -22,6 +26,8 @@ export function PortalShell({
       <div className="flex min-h-screen flex-col pb-16 lg:pl-64 lg:pb-0">
         <PortalTopBar
           role={role}
+          tower={tower}
+          villamentNumber={villamentNumber}
           flatNumber={flatNumber}
           showAdmin={showAdmin}
           signOutAction={signOutAction}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { auth } from '@/lib/auth';
+import { hasCompleteResidence } from '@/lib/residence-options';
 
 const PUBLIC_PATHS = ['/login', '/api/auth', '/api/config'];
 
@@ -25,6 +26,17 @@ export default auth((req) => {
   }
 
   if (req.auth?.user?.status && req.auth.user.status !== 'Approved' && !isApi) {
+    if (pathname.startsWith('/complete-profile')) {
+      return NextResponse.next();
+    }
+
+    if (
+      req.auth.user.status === 'Pending' &&
+      !hasCompleteResidence(req.auth.user.tower, req.auth.user.villamentNumber)
+    ) {
+      return NextResponse.redirect(new URL('/complete-profile', req.url));
+    }
+
     const status = req.auth.user.status.toLowerCase();
     return NextResponse.redirect(new URL(`/login?status=${status}`, req.url));
   }

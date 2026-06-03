@@ -1,5 +1,9 @@
 import { google } from 'googleapis';
 
+import {
+  formatResidenceFlatNumber,
+  hasCompleteResidence,
+} from '@/lib/residence-options';
 import type {
   Announcement,
   AuditLog,
@@ -81,22 +85,110 @@ function toNum(value?: string) {
   return Number(value || 0);
 }
 
+const USER_ROLES = new Set(['Resident', 'Committee', 'SuperAdmin']);
+
+export function userToRowValues(user: {
+  email: string;
+  name: string;
+  picture: string;
+  tower: string;
+  villamentNumber: string;
+  role: string;
+  status: string;
+  addedBy: string;
+  addedOn: string;
+  approvedOn?: string;
+  actionReason?: string;
+}): string[] {
+  return [
+    user.email,
+    user.name,
+    user.picture,
+    user.tower,
+    user.villamentNumber,
+    user.role,
+    user.status,
+    user.addedBy,
+    user.addedOn,
+    user.approvedOn ?? '',
+    user.actionReason ?? '',
+  ];
+}
+
+function parseUserRow(row: string[], idx: number): User {
+  const maybeLegacyRole = toStr(row[4]);
+  const isLegacyRow = USER_ROLES.has(maybeLegacyRole);
+
+  if (isLegacyRow) {
+    const legacyFlat = toStr(row[3]);
+    return {
+      email: toStr(row[0]),
+      name: toStr(row[1]),
+      picture: toStr(row[2]),
+      tower: '',
+      villamentNumber: legacyFlat,
+      flatNumber: legacyFlat,
+      role: (maybeLegacyRole || 'Resident') as User['role'],
+      status: (toStr(row[5]) || 'Pending') as User['status'],
+      addedBy: toStr(row[6]),
+      addedOn: toStr(row[7]),
+      approvedOn: toStr(row[8]),
+      actionReason: toStr(row[9]),
+      rowNumber: idx + 2,
+    };
+  }
+
+  const tower = toStr(row[3]);
+  const villamentNumber = toStr(row[4]);
+  const flatNumber =
+    formatResidenceFlatNumber(tower, villamentNumber) || villamentNumber;
+
+  return {
+    email: toStr(row[0]),
+    name: toStr(row[1]),
+    picture: toStr(row[2]),
+    tower,
+    villamentNumber,
+    flatNumber,
+    role: (toStr(row[5]) || 'Resident') as User['role'],
+    status: (toStr(row[6]) || 'Pending') as User['status'],
+    addedBy: toStr(row[7]),
+    addedOn: toStr(row[8]),
+    approvedOn: toStr(row[9]),
+    actionReason: toStr(row[10]),
+    rowNumber: idx + 2,
+  };
+}
+
 export async function readUsers(): Promise<User[]> {
   const rows = await readSheetRows('Users');
-  return rows.map((r, idx) => ({
-    email: toStr(r[0]),
-    name: toStr(r[1]),
-    picture: toStr(r[2]),
-    flatNumber: toStr(r[3]),
-    role: (toStr(r[4]) || 'Resident') as User['role'],
-    status: (toStr(r[5]) || 'Pending') as User['status'],
-    addedBy: toStr(r[6]),
-    addedOn: toStr(r[7]),
-    approvedOn: toStr(r[8]),
-    actionReason: toStr(r[9]),
-    rowNumber: idx + 2,
-  })) as User[];
+  return rows.map(parseUserRow);
 }
+
+export async function updateUserRow(user: User) {
+  if (!user.rowNumber) {
+    throw new Error('Missing row number for user update');
+  }
+  await updateRow(
+    'Users',
+    user.rowNumber,
+    userToRowValues({
+      email: user.email,
+      name: user.name,
+      picture: user.picture,
+      tower: user.tower,
+      villamentNumber: user.villamentNumber,
+      role: user.role,
+      status: user.status,
+      addedBy: user.addedBy,
+      addedOn: user.addedOn,
+      approvedOn: user.approvedOn,
+      actionReason: user.actionReason,
+    }),
+  );
+}
+
+export { hasCompleteResidence };
 
 export async function readProjects(): Promise<Project[]> {
   const rows = await readSheetRows('Projects');

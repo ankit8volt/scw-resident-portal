@@ -1,7 +1,21 @@
 import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
 
-import { appendRow, readUsers } from '@/lib/sheets';
+import {
+  formatResidenceFlatNumber,
+  hasCompleteResidence,
+} from '@/lib/residence-options';
+import { appendRow, readUsers, userToRowValues } from '@/lib/sheets';
+
+function profileRedirect(user: { tower?: string; villamentNumber?: string; status: string }) {
+  if (user.status === 'Approved') {
+    return true;
+  }
+  if (user.status === 'Pending' && !hasCompleteResidence(user.tower, user.villamentNumber)) {
+    return '/complete-profile';
+  }
+  return `/login?status=${user.status.toLowerCase()}`;
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -29,26 +43,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       );
 
       if (!existing) {
-        await appendRow('Users', [
-          user.email,
-          user.name || '',
-          user.image || '',
-          '',
-          'Resident',
-          'Pending',
-          'system',
-          new Date().toISOString(),
-          '',
-          '',
-        ]);
-        return '/login?status=pending';
+        await appendRow(
+          'Users',
+          userToRowValues({
+            email: user.email,
+            name: user.name || '',
+            picture: user.image || '',
+            tower: '',
+            villamentNumber: '',
+            role: 'Resident',
+            status: 'Pending',
+            addedBy: 'system',
+            addedOn: new Date().toISOString(),
+          }),
+        );
+        return '/complete-profile';
       }
 
-      if (existing.status === 'Approved') {
-        return true;
-      }
-
-      return `/login?status=${existing.status.toLowerCase()}`;
+      return profileRedirect(existing);
     },
     async jwt({ token }) {
       if (!token.email) {
@@ -59,17 +71,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (sheetUser) => sheetUser.email.toLowerCase() === token.email!.toLowerCase(),
       );
       token.role = existing?.role || 'Resident';
-      token.flatNumber = existing?.flatNumber || '';
+      token.tower = existing?.tower || '';
+      token.villamentNumber = existing?.villamentNumber || '';
+      token.flatNumber =
+        existing?.flatNumber ||
+        formatResidenceFlatNumber(existing?.tower ?? '', existing?.villamentNumber ?? '') ||
+        '';
       token.status = existing?.status || 'Pending';
       token.approvedOn = existing?.approvedOn || '';
+      token.profileComplete = hasCompleteResidence(
+        existing?.tower,
+        existing?.villamentNumber,
+      );
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.role = (token.role as string) || 'Resident';
+        session.user.tower = (token.tower as string) || '';
+        session.user.villamentNumber = (token.villamentNumber as string) || '';
         session.user.flatNumber = (token.flatNumber as string) || '';
         session.user.status = (token.status as string) || 'Pending';
         session.user.approvedOn = (token.approvedOn as string) || '';
+        session.user.profileComplete = Boolean(token.profileComplete);
       }
       return session;
     },

@@ -29,6 +29,8 @@ export default async function PortalLayout({
     <Providers session={session}>
       <PortalShell
         role={session.user.role}
+        tower={session.user.tower}
+        villamentNumber={session.user.villamentNumber}
         flatNumber={session.user.flatNumber}
         showAdmin={showAdmin}
         signOutAction={signOutAction}

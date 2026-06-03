@@ -5,6 +5,9 @@ export interface User {
   email: string;
   name: string;
   picture: string;
+  tower: string;
+  villamentNumber: string;
+  /** Derived display id, e.g. "8-203" */
   flatNumber: string;
   role: UserRole;
   status: UserStatus;

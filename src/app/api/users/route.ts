@@ -1,4 +1,4 @@
-import { appendAuditLog, readUsers, updateRow } from '@/lib/sheets';
+import { appendAuditLog, readUsers, updateUserRow } from '@/lib/sheets';
 import { isSuperAdmin, requireSession } from '@/lib/session';
 import type { UserRole, UserStatus } from '@/types';
 
@@ -35,7 +35,8 @@ export async function PATCH(request: Request) {
       email: string;
       status: UserStatus;
       role: UserRole;
-      flatNumber: string;
+      tower?: string;
+      villamentNumber?: string;
       actionReason?: string;
     };
 
@@ -48,18 +49,20 @@ export async function PATCH(request: Request) {
       return Response.json({ error: 'User not found' }, { status: 404 });
     }
 
-    await updateRow('Users', user.rowNumber, [
-      user.email,
-      user.name,
-      user.picture,
-      payload.flatNumber,
-      payload.role,
-      payload.status,
-      session.user.email!,
-      user.addedOn || new Date().toISOString(),
-      payload.status === 'Approved' ? new Date().toISOString() : '',
-      payload.actionReason || '',
-    ]);
+    await updateUserRow({
+      ...user,
+      tower: payload.tower ?? user.tower,
+      villamentNumber: payload.villamentNumber ?? user.villamentNumber,
+      flatNumber:
+        payload.tower && payload.villamentNumber
+          ? `${payload.tower}-${payload.villamentNumber}`
+          : user.flatNumber,
+      role: payload.role,
+      status: payload.status,
+      addedBy: session.user.email!,
+      approvedOn: payload.status === 'Approved' ? new Date().toISOString() : user.approvedOn,
+      actionReason: payload.actionReason || user.actionReason,
+    });
 
     await appendAuditLog(
       session.user.email!,
