@@ -4,6 +4,7 @@ import { LogIn } from 'lucide-react';
 
 import { BrandLogo } from '@/components/layout/BrandLogo';
 import { auth, signIn } from '@/lib/auth';
+import { hasCompleteResidence } from '@/lib/residence-options';
 
 const statusMap: Record<string, { title: string; message: string }> = {
   pending: {
@@ -29,8 +30,16 @@ type LoginPageProps = {
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const session = await auth();
-  if (session?.user?.email && session.user.status === 'Approved') {
-    redirect('/dashboard');
+  if (session?.user?.email) {
+    if (session.user.status === 'Approved') {
+      redirect('/dashboard');
+    }
+    if (
+      session.user.status === 'Pending' &&
+      !hasCompleteResidence(session.user.tower, session.user.villamentNumber)
+    ) {
+      redirect('/complete-profile');
+    }
   }
 
   const params = await searchParams;
@@ -80,7 +89,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <form
               action={async () => {
                 'use server';
-                await signIn('google', { redirectTo: '/dashboard' });
+                await signIn('google', { redirectTo: '/auth/continue' });
               }}
             >
               <button

@@ -8,11 +8,8 @@ import {
 import { appendRow, readUsers, userToRowValues } from '@/lib/sheets';
 
 function profileRedirect(user: { tower?: string; villamentNumber?: string; status: string }) {
-  if (user.status === 'Approved') {
+  if (user.status === 'Approved' || user.status === 'Pending') {
     return true;
-  }
-  if (user.status === 'Pending' && !hasCompleteResidence(user.tower, user.villamentNumber)) {
-    return '/complete-profile';
   }
   return `/login?status=${user.status.toLowerCase()}`;
 }
@@ -57,7 +54,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             addedOn: new Date().toISOString(),
           }),
         );
-        return '/complete-profile';
+        return true;
       }
 
       return profileRedirect(existing);

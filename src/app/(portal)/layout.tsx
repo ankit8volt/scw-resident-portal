@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { PortalShell } from '@/components/layout/PortalShell';
 import { Providers } from '@/components/Providers';
 import { auth, signOut } from '@/lib/auth';
+import { hasCompleteResidence } from '@/lib/residence-options';
 
 export default async function PortalLayout({
   children,
@@ -14,6 +15,12 @@ export default async function PortalLayout({
     redirect('/login');
   }
   if (session.user.status !== 'Approved') {
+    if (
+      session.user.status === 'Pending' &&
+      !hasCompleteResidence(session.user.tower, session.user.villamentNumber)
+    ) {
+      redirect('/complete-profile');
+    }
     redirect(`/login?status=${session.user.status.toLowerCase()}`);
   }
 

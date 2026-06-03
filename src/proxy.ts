@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { hasCompleteResidence } from '@/lib/residence-options';
 
-const PUBLIC_PATHS = ['/login', '/api/auth', '/api/config'];
+const PUBLIC_PATHS = ['/login', '/api/auth', '/api/config', '/auth/continue'];
 
 export default auth((req) => {
   const pathname = req.nextUrl.pathname;
