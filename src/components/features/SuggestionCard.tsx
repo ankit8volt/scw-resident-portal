@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageSquare, TrendingUp } from 'lucide-react';
+import { Loader2, MessageSquare, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 
 import { suggestionStatusStyles } from '@/lib/ui-styles';
@@ -27,9 +27,8 @@ export function SuggestionCard({ suggestion }: SuggestionCardProps) {
     setLoading(true);
     try {
       await fetch(`/api/suggestions/${suggestion.id}/upvote`, { method: 'POST' });
-      setUpvoted(!upvoted);
       window.location.reload();
-    } finally {
+    } catch {
       setLoading(false);
     }
   }
@@ -49,7 +48,11 @@ export function SuggestionCard({ suggestion }: SuggestionCardProps) {
               : 'bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary',
           )}
         >
-          <TrendingUp className="h-5 w-5" />
+          {loading ? (
+            <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+          ) : (
+            <TrendingUp className="h-5 w-5" />
+          )}
           <span className="text-sm font-semibold">{suggestion.upvoteCount}</span>
         </button>
 

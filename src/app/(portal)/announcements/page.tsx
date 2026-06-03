@@ -147,7 +147,12 @@ export default function AnnouncementsPage() {
                   <option value="Event Alert">Event Alert</option>
                 </select>
               </label>
-              <Button onClick={createAnnouncement} disabled={creating || !newTitle || !newMessage}>
+              <Button
+                onClick={createAnnouncement}
+                disabled={creating || !newTitle || !newMessage}
+                loading={creating}
+                loadingText="Publishing…"
+              >
                 Publish
               </Button>
             </div>

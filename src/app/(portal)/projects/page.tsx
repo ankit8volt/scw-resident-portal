@@ -207,7 +207,12 @@ export default function ProjectsPage() {
                   onChange={(event) => setDescription(event.target.value)}
                 />
               </label>
-              <Button onClick={createProject} disabled={creating || !name || !description}>
+              <Button
+                onClick={createProject}
+                disabled={creating || !name || !description}
+                loading={creating}
+                loadingText="Creating…"
+              >
                 Add project
               </Button>
             </div>

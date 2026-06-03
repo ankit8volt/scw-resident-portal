@@ -34,6 +34,8 @@ export default function PollsPage() {
   const { data, mutate } = useSWR<Poll[]>('/api/polls', fetcher);
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [voteState, setVoteState] = useState<Record<string, VoteState>>({});
+  const [actionPollId, setActionPollId] = useState('');
+  const [actionType, setActionType] = useState<'vote' | 'results' | ''>('');
 
   const activePolls = (data || []).filter((poll) => poll.status === 'Open');
   const closedPolls = (data || []).filter((poll) => poll.status !== 'Open');
@@ -41,19 +43,37 @@ export default function PollsPage() {
   async function castVote(pollId: string) {
     const choice = selected[pollId];
     if (!choice) return;
-    await fetch('/api/votes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pollId, voteChosen: [choice] }),
-    });
-    await loadResults(pollId);
+    setActionPollId(pollId);
+    setActionType('vote');
+    try {
+      await fetch('/api/votes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pollId, voteChosen: [choice] }),
+      });
+      await loadResults(pollId, false);
+    } finally {
+      setActionPollId('');
+      setActionType('');
+    }
   }
 
-  async function loadResults(pollId: string) {
-    const response = await fetch(`/api/votes?pollId=${pollId}`);
-    const payload = (await response.json()) as VoteState;
-    setVoteState((prev) => ({ ...prev, [pollId]: payload }));
-    await mutate();
+  async function loadResults(pollId: string, trackLoading = true) {
+    if (trackLoading) {
+      setActionPollId(pollId);
+      setActionType('results');
+    }
+    try {
+      const response = await fetch(`/api/votes?pollId=${pollId}`);
+      const payload = (await response.json()) as VoteState;
+      setVoteState((prev) => ({ ...prev, [pollId]: payload }));
+      await mutate();
+    } finally {
+      if (trackLoading) {
+        setActionPollId('');
+        setActionType('');
+      }
+    }
   }
 
   return (
@@ -78,6 +98,8 @@ export default function PollsPage() {
                   poll={poll}
                   selected={selected[poll.id]}
                   voteState={voteState[poll.id]}
+                  voting={actionPollId === poll.id && actionType === 'vote'}
+                  loadingResults={actionPollId === poll.id && actionType === 'results'}
                   onSelect={(value) => setSelected((prev) => ({ ...prev, [poll.id]: value }))}
                   onVote={() => castVote(poll.id)}
                   onLoadResults={() => loadResults(poll.id)}
@@ -102,6 +124,7 @@ export default function PollsPage() {
                   <PollResultsBody
                     poll={poll}
                     voteState={voteState[poll.id]}
+                    loadingResults={actionPollId === poll.id && actionType === 'results'}
                     onLoadResults={() => loadResults(poll.id)}
                   />
                 </div>
@@ -118,6 +141,8 @@ function PollCard({
   poll,
   selected,
   voteState,
+  voting,
+  loadingResults,
   onSelect,
   onVote,
   onLoadResults,
@@ -125,9 +150,11 @@ function PollCard({
   poll: Poll;
   selected?: string;
   voteState?: VoteState;
+  voting?: boolean;
+  loadingResults?: boolean;
   onSelect: (value: string) => void;
-  onVote: () => void;
-  onLoadResults: () => void;
+  onVote: () => void | Promise<void>;
+  onLoadResults: () => void | Promise<void>;
 }) {
   const options = pollOptions(poll);
   const showResults = voteState?.canViewResults;
@@ -190,10 +217,21 @@ function PollCard({
 
       {!showResults ? (
         <div className="mt-4 flex flex-wrap gap-2">
-          <Button onClick={onVote} disabled={!selected}>
+          <Button
+            onClick={onVote}
+            disabled={!selected || voting || loadingResults}
+            loading={voting}
+            loadingText="Submitting vote…"
+          >
             Submit Vote
           </Button>
-          <Button variant="secondary" onClick={onLoadResults}>
+          <Button
+            variant="secondary"
+            onClick={onLoadResults}
+            disabled={voting || loadingResults}
+            loading={loadingResults}
+            loadingText="Loading results…"
+          >
             View Results
           </Button>
         </div>
@@ -239,17 +277,24 @@ function PollResultsHeader({ poll, closed = false }: { poll: Poll; closed?: bool
 function PollResultsBody({
   poll,
   voteState,
+  loadingResults,
   onLoadResults,
 }: {
   poll: Poll;
   voteState?: VoteState;
-  onLoadResults: () => void;
+  loadingResults?: boolean;
+  onLoadResults: () => void | Promise<void>;
 }) {
   const options = pollOptions(poll);
 
   if (!voteState?.canViewResults) {
     return (
-      <Button variant="secondary" onClick={onLoadResults}>
+      <Button
+        variant="secondary"
+        onClick={onLoadResults}
+        loading={loadingResults}
+        loadingText="Loading results…"
+      >
         View Results
       </Button>
     );

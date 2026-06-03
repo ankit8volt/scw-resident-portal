@@ -17,6 +17,7 @@ export default function DocumentsPage() {
   const [year, setYear] = useState('');
   const [title, setTitle] = useState('');
   const [link, setLink] = useState('');
+  const [adding, setAdding] = useState(false);
 
   const apiQuery = useMemo(() => {
     const params = new URLSearchParams();
@@ -31,21 +32,26 @@ export default function DocumentsPage() {
     session?.user.role === 'Committee' || session?.user.role === 'SuperAdmin';
 
   async function addDocument() {
-    await fetch('/api/documents', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        documentTitle: title,
-        category: category || 'Other',
-        year: year || String(new Date().getFullYear()),
-        shortDescription: '',
-        googleDriveLink: link,
-        visibleTo: 'Everyone',
-      }),
-    });
-    setTitle('');
-    setLink('');
-    await mutate();
+    setAdding(true);
+    try {
+      await fetch('/api/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentTitle: title,
+          category: category || 'Other',
+          year: year || String(new Date().getFullYear()),
+          shortDescription: '',
+          googleDriveLink: link,
+          visibleTo: 'Everyone',
+        }),
+      });
+      setTitle('');
+      setLink('');
+      await mutate();
+    } finally {
+      setAdding(false);
+    }
   }
 
   return (
@@ -147,7 +153,12 @@ export default function DocumentsPage() {
                   onChange={(e) => setLink(e.target.value)}
                 />
               </label>
-              <Button onClick={addDocument} disabled={!title || !link}>
+              <Button
+                onClick={addDocument}
+                disabled={adding || !title || !link}
+                loading={adding}
+                loadingText="Adding…"
+              >
                 Add document
               </Button>
             </div>

@@ -1,4 +1,4 @@
-import { readUsers, updateUserRow } from '@/lib/sheets';
+import { getUserByEmail, updateUserRow } from '@/lib/sheets';
 import {
   hasCompleteResidence,
   isValidTower,
@@ -13,10 +13,7 @@ export async function GET() {
       return Response.json({ error: 'Unauthenticated' }, { status: 401 });
     }
 
-    const users = await readUsers();
-    const user = users.find(
-      (item) => item.email.toLowerCase() === session.user.email!.toLowerCase(),
-    );
+    const user = await getUserByEmail(session.user.email!);
 
     if (!user) {
       return Response.json({ error: 'User not found' }, { status: 404 });
@@ -55,10 +52,7 @@ export async function PATCH(request: Request) {
       return Response.json({ error: 'Invalid villament number' }, { status: 400 });
     }
 
-    const users = await readUsers();
-    const user = users.find(
-      (item) => item.email.toLowerCase() === session.user.email!.toLowerCase(),
-    );
+    const user = await getUserByEmail(session.user.email!);
 
     if (!user?.rowNumber) {
       return Response.json({ error: 'User not found' }, { status: 404 });

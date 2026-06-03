@@ -32,12 +32,13 @@ export default function NewSuggestionPage() {
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { error?: string } | null;
         setError(payload?.error || 'Failed to submit suggestion.');
+        setSubmitting(false);
         return;
       }
 
       router.push('/suggestions');
       router.refresh();
-    } finally {
+    } catch {
       setSubmitting(false);
     }
   }
@@ -82,6 +83,8 @@ export default function NewSuggestionPage() {
               <Button
                 onClick={submitSuggestion}
                 disabled={submitting || !title.trim() || !description.trim()}
+                loading={submitting}
+                loadingText="Submitting…"
               >
                 Submit suggestion
               </Button>

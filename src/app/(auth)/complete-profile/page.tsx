@@ -38,13 +38,14 @@ export default function CompleteProfilePage() {
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { error?: string } | null;
         setError(payload?.error || 'Failed to save your details.');
+        setSubmitting(false);
         return;
       }
 
       await update();
       router.push('/login?status=pending');
       router.refresh();
-    } finally {
+    } catch {
       setSubmitting(false);
     }
   }
@@ -116,6 +117,8 @@ export default function CompleteProfilePage() {
           <Button
             onClick={submitProfile}
             disabled={submitting || !tower || !villamentNumber}
+            loading={submitting}
+            loadingText="Submitting…"
             className="w-full"
           >
             Submit for approval

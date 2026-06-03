@@ -12,16 +12,14 @@ import type { User, UserRole, UserStatus } from '@/types';
 
 export default function AdminPage() {
   const [busyEmail, setBusyEmail] = useState('');
-  const { data, mutate, error } = useSWR<User[]>('/api/users', fetcher);
+  const [error, setError] = useState('');
+  const { data, mutate, error: loadError } = useSWR<User[]>('/api/users', fetcher);
 
-  async function updateUser(
-    user: User,
-    status: UserStatus,
-    role: UserRole,
-  ) {
+  async function updateUser(user: User, status: UserStatus, role: UserRole) {
+    setError('');
     setBusyEmail(user.email);
     try {
-      await fetch('/api/users', {
+      const response = await fetch('/api/users', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -32,13 +30,20 @@ export default function AdminPage() {
           villamentNumber: user.villamentNumber,
         }),
       });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        setError(payload?.error || 'Failed to update user. No changes were saved.');
+        return;
+      }
+
       await mutate();
     } finally {
       setBusyEmail('');
     }
   }
 
-  if (error) {
+  if (loadError) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <p className="text-sm text-muted-foreground">
@@ -61,6 +66,12 @@ export default function AdminPage() {
           Manage resident access and roles
         </div>
 
+        {error ? (
+          <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        ) : null}
+
         <div className="space-y-4">
           {(data || []).map((user) => {
             const residence =
@@ -68,10 +79,11 @@ export default function AdminPage() {
                 ? formatResidenceLabel(user.tower, user.villamentNumber)
                 : user.flatNumber || 'Not provided';
             const profileReady = hasCompleteResidence(user.tower, user.villamentNumber);
+            const isBusy = busyEmail === user.email;
 
             return (
               <article
-                key={user.email}
+                key={`${user.email}-${user.rowNumber}`}
                 className="rounded-xl border border-border bg-white p-6"
               >
                 <h3 className="text-lg font-semibold text-foreground">{user.name || user.email}</h3>
@@ -88,14 +100,18 @@ export default function AdminPage() {
                 {user.status === 'Pending' ? (
                   <div className="flex flex-wrap gap-2">
                     <Button
-                      disabled={busyEmail === user.email || !profileReady}
+                      disabled={Boolean(busyEmail) || !profileReady}
+                      loading={isBusy}
+                      loadingText="Approving…"
                       onClick={() => updateUser(user, 'Approved', 'Resident')}
                     >
                       Approve as Resident
                     </Button>
                     <Button
                       variant="secondary"
-                      disabled={busyEmail === user.email}
+                      disabled={Boolean(busyEmail)}
+                      loading={isBusy}
+                      loadingText="Rejecting…"
                       onClick={() => updateUser(user, 'Rejected', user.role)}
                     >
                       Reject

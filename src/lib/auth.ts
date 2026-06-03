@@ -5,7 +5,7 @@ import {
   formatResidenceFlatNumber,
   hasCompleteResidence,
 } from '@/lib/residence-options';
-import { appendRow, readUsers, userToRowValues } from '@/lib/sheets';
+import { appendRow, getUserByEmail, readUsers, userToRowValues } from '@/lib/sheets';
 
 function profileRedirect(user: { tower?: string; villamentNumber?: string; status: string }) {
   if (user.status === 'Approved' || user.status === 'Pending') {
@@ -34,10 +34,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return '/login?status=rejected';
       }
 
-      const users = await readUsers();
-      const existing = users.find(
-        (sheetUser) => sheetUser.email.toLowerCase() === user.email!.toLowerCase(),
-      );
+      const existing = await getUserByEmail(user.email);
 
       if (!existing) {
         await appendRow(
@@ -63,10 +60,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (!token.email) {
         return token;
       }
-      const users = await readUsers();
-      const existing = users.find(
-        (sheetUser) => sheetUser.email.toLowerCase() === token.email!.toLowerCase(),
-      );
+      const existing = await getUserByEmail(token.email);
       token.role = existing?.role || 'Resident';
       token.tower = existing?.tower || '';
       token.villamentNumber = existing?.villamentNumber || '';

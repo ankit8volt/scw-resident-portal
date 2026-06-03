@@ -1,9 +1,11 @@
 import { google } from 'googleapis';
 
+import { hasCompleteResidence } from '@/lib/residence-options';
 import {
-  formatResidenceFlatNumber,
-  hasCompleteResidence,
-} from '@/lib/residence-options';
+  parseUserSheetRow,
+  pickCanonicalUser,
+  USER_SHEET_HEADERS,
+} from '@/lib/user-sheet';
 import type {
   Announcement,
   AuditLog,
@@ -85,8 +87,6 @@ function toNum(value?: string) {
   return Number(value || 0);
 }
 
-const USER_ROLES = new Set(['Resident', 'Committee', 'SuperAdmin']);
-
 export function userToRowValues(user: {
   email: string;
   name: string;
@@ -115,55 +115,46 @@ export function userToRowValues(user: {
   ];
 }
 
-function parseUserRow(row: string[], idx: number): User {
-  const maybeLegacyRole = toStr(row[4]);
-  const isLegacyRow = USER_ROLES.has(maybeLegacyRole);
+export async function readUsers(): Promise<User[]> {
+  ensureSheetId();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: 'Users!A:K',
+  });
 
-  if (isLegacyRow) {
-    const legacyFlat = toStr(row[3]);
-    return {
-      email: toStr(row[0]),
-      name: toStr(row[1]),
-      picture: toStr(row[2]),
-      tower: '',
-      villamentNumber: legacyFlat,
-      flatNumber: legacyFlat,
-      role: (maybeLegacyRole || 'Resident') as User['role'],
-      status: (toStr(row[5]) || 'Pending') as User['status'],
-      addedBy: toStr(row[6]),
-      addedOn: toStr(row[7]),
-      approvedOn: toStr(row[8]),
-      actionReason: toStr(row[9]),
-      rowNumber: idx + 2,
-    };
+  const rows = res.data.values ?? [];
+  if (rows.length === 0) {
+    return [];
   }
 
-  const tower = toStr(row[3]);
-  const villamentNumber = toStr(row[4]);
-  const flatNumber =
-    formatResidenceFlatNumber(tower, villamentNumber) || villamentNumber;
+  const headers = rows[0].map((cell) => toStr(cell));
+  const users: User[] = [];
 
-  return {
-    email: toStr(row[0]),
-    name: toStr(row[1]),
-    picture: toStr(row[2]),
-    tower,
-    villamentNumber,
-    flatNumber,
-    role: (toStr(row[5]) || 'Resident') as User['role'],
-    status: (toStr(row[6]) || 'Pending') as User['status'],
-    addedBy: toStr(row[7]),
-    addedOn: toStr(row[8]),
-    approvedOn: toStr(row[9]),
-    actionReason: toStr(row[10]),
-    rowNumber: idx + 2,
-  };
+  for (let index = 1; index < rows.length; index += 1) {
+    const row = rows[index] ?? [];
+    if (rowIsEmpty(row)) {
+      continue;
+    }
+    const sheetRowNumber = index + 1;
+    const user = parseUserSheetRow(row, sheetRowNumber, headers);
+    if (user) {
+      users.push(user);
+    }
+  }
+
+  return users;
 }
 
-export async function readUsers(): Promise<User[]> {
-  const rows = await readSheetRows('Users');
-  return rows.map(parseUserRow);
+export async function getUserByEmail(email: string): Promise<User | undefined> {
+  const users = await readUsers();
+  return pickCanonicalUser(users, email);
 }
+
+function rowIsEmpty(row: string[]) {
+  return row.every((cell) => !toStr(cell));
+}
+
+export { USER_SHEET_HEADERS };
 
 export async function updateUserRow(user: User) {
   if (!user.rowNumber) {

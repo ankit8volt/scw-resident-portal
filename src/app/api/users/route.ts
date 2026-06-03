@@ -1,4 +1,4 @@
-import { appendAuditLog, readUsers, updateUserRow } from '@/lib/sheets';
+import { appendAuditLog, getUserByEmail, readUsers, updateUserRow } from '@/lib/sheets';
 import { isSuperAdmin, requireSession } from '@/lib/session';
 import type { UserRole, UserStatus } from '@/types';
 
@@ -40,28 +40,38 @@ export async function PATCH(request: Request) {
       actionReason?: string;
     };
 
-    const users = await readUsers();
-    const user = users.find(
-      (item) => item.email.toLowerCase() === payload.email.toLowerCase(),
-    );
+    const actorEmail = session.user.email!.toLowerCase();
+    const targetEmail = payload.email.toLowerCase();
+
+    if (
+      targetEmail === actorEmail &&
+      (payload.role !== 'SuperAdmin' || payload.status !== 'Approved')
+    ) {
+      return Response.json(
+        { error: 'You cannot change your own Super Admin access from this screen.' },
+        { status: 403 },
+      );
+    }
+
+    const user = await getUserByEmail(payload.email);
 
     if (!user?.rowNumber) {
       return Response.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const tower = payload.tower ?? user.tower;
+    const villamentNumber = payload.villamentNumber ?? user.villamentNumber;
+
     await updateUserRow({
       ...user,
-      tower: payload.tower ?? user.tower,
-      villamentNumber: payload.villamentNumber ?? user.villamentNumber,
+      tower,
+      villamentNumber,
       flatNumber:
-        payload.tower && payload.villamentNumber
-          ? `${payload.tower}-${payload.villamentNumber}`
-          : user.flatNumber,
+        tower && villamentNumber ? `${tower}-${villamentNumber}` : user.flatNumber,
       role: payload.role,
       status: payload.status,
-      addedBy: session.user.email!,
       approvedOn: payload.status === 'Approved' ? new Date().toISOString() : user.approvedOn,
-      actionReason: payload.actionReason || user.actionReason,
+      actionReason: payload.actionReason ?? user.actionReason,
     });
 
     await appendAuditLog(

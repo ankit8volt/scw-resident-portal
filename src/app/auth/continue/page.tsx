@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 
 import { auth } from '@/lib/auth';
 import { hasCompleteResidence } from '@/lib/residence-options';
-import { readUsers } from '@/lib/sheets';
+import { getUserByEmail } from '@/lib/sheets';
 
 /**
  * Post-OAuth routing: send users to complete profile, pending message, or dashboard.
@@ -13,10 +13,7 @@ export default async function AuthContinuePage() {
     redirect('/login');
   }
 
-  const users = await readUsers();
-  const user = users.find(
-    (row) => row.email.toLowerCase() === session.user!.email!.toLowerCase(),
-  );
+  const user = await getUserByEmail(session.user!.email!);
 
   if (!user) {
     redirect('/login');

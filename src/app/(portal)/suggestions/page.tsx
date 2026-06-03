@@ -21,6 +21,14 @@ const categories = [
   'Other',
 ] as const;
 
+const filterChipClass = (active: boolean) =>
+  cn(
+    'inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-lg px-4 text-sm font-medium transition-colors',
+    active
+      ? 'bg-primary text-white'
+      : 'border border-border bg-white text-muted-foreground hover:bg-secondary',
+  );
+
 export default function SuggestionsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [sortBy, setSortBy] = useState<'upvotes' | 'date'>('upvotes');
@@ -47,49 +55,34 @@ export default function SuggestionsPage() {
           imageSrc="/images/hero-canopy.jpg"
         />
 
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 overflow-x-auto">
-            <Filter className="h-5 w-5 shrink-0 text-muted-foreground" />
+        <div className="mb-6 space-y-3">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <Filter className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
             {categories.map((category) => (
               <button
                 key={category}
                 type="button"
                 onClick={() => setSelectedCategory(category)}
-                className={cn(
-                  'whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                  selectedCategory === category
-                    ? 'bg-primary text-white'
-                    : 'border border-border bg-white text-muted-foreground hover:bg-secondary',
-                )}
+                className={filterChipClass(selectedCategory === category)}
               >
                 {category}
               </button>
             ))}
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Sort by:</span>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <span className="shrink-0 text-sm text-muted-foreground">Sort by:</span>
             <button
               type="button"
               onClick={() => setSortBy('upvotes')}
-              className={cn(
-                'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                sortBy === 'upvotes'
-                  ? 'bg-primary text-white'
-                  : 'border border-border bg-white text-muted-foreground hover:bg-secondary',
-              )}
+              className={filterChipClass(sortBy === 'upvotes')}
             >
               Most Popular
             </button>
             <button
               type="button"
               onClick={() => setSortBy('date')}
-              className={cn(
-                'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                sortBy === 'date'
-                  ? 'bg-primary text-white'
-                  : 'border border-border bg-white text-muted-foreground hover:bg-secondary',
-              )}
+              className={filterChipClass(sortBy === 'date')}
             >
               Recent
             </button>
@@ -98,11 +91,17 @@ export default function SuggestionsPage() {
 
         <div className="space-y-4">
           {filtered.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No suggestions found.</p>
-          ) : null}
-          {filtered.map((suggestion) => (
-            <SuggestionCard key={suggestion.id} suggestion={suggestion} />
-          ))}
+            <div className="rounded-xl border border-dashed border-border bg-white px-6 py-10 text-center">
+              <p className="text-sm text-muted-foreground">No suggestions found.</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Try another category or submit the first idea below.
+              </p>
+            </div>
+          ) : (
+            filtered.map((suggestion) => (
+              <SuggestionCard key={suggestion.id} suggestion={suggestion} />
+            ))
+          )}
         </div>
 
         <div className="mt-8 rounded-xl border border-primary/20 bg-primary/5 p-6">
