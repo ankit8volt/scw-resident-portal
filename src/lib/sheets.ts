@@ -1,6 +1,8 @@
 import { google } from 'googleapis';
 
 import { hasCompleteResidence } from '@/lib/residence-options';
+import { cachedSheetData, invalidateSheetCache } from '@/lib/sheet-cache';
+import { SHEET_ID } from '@/lib/sheets-constants';
 import {
   parseUserSheetRow,
   pickCanonicalUser,
@@ -21,6 +23,8 @@ import type {
   Vote,
 } from '@/types';
 
+export { SHEET_ID };
+
 const credentials = {
   client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
   private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
@@ -33,24 +37,23 @@ const auth = new google.auth.GoogleAuth({
 
 const sheets = google.sheets({ version: 'v4', auth });
 
-export const SHEET_ID =
-  process.env.NODE_ENV === 'production'
-    ? process.env.GOOGLE_SHEETS_ID
-    : process.env.TEST_GOOGLE_SHEETS_ID || process.env.GOOGLE_SHEETS_ID;
-
 function ensureSheetId() {
   if (!SHEET_ID) {
     throw new Error('Missing GOOGLE_SHEETS_ID/TEST_GOOGLE_SHEETS_ID');
   }
 }
 
-export async function readSheetRows(sheetName: string) {
+async function readSheetRowsFromApi(sheetName: string) {
   ensureSheetId();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
     range: `${sheetName}!A2:ZZ`,
   });
   return res.data.values ?? [];
+}
+
+export async function readSheetRows(sheetName: string) {
+  return cachedSheetData(sheetName, 'rows-a2-zz', () => readSheetRowsFromApi(sheetName));
 }
 
 export async function appendRow(
@@ -64,6 +67,7 @@ export async function appendRow(
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [values] },
   });
+  await invalidateSheetCache(sheetName);
 }
 
 export async function updateRow(
@@ -78,10 +82,11 @@ export async function updateRow(
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [values] },
   });
+  await invalidateSheetCache(sheetName);
 }
 
 function toStr(value?: string) {
-  return value ?? '';
+  return (value ?? '').trim();
 }
 
 function toNum(value?: string) {
@@ -116,7 +121,7 @@ export function userToRowValues(user: {
   ];
 }
 
-export async function readUsers(): Promise<User[]> {
+async function readUsersFromApi(): Promise<User[]> {
   ensureSheetId();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
@@ -144,6 +149,10 @@ export async function readUsers(): Promise<User[]> {
   }
 
   return users;
+}
+
+export async function readUsers(): Promise<User[]> {
+  return cachedSheetData('Users', 'users-a-k', readUsersFromApi);
 }
 
 export async function getUserByEmail(email: string): Promise<User | undefined> {
@@ -245,7 +254,7 @@ export async function readPolls(): Promise<Poll[]> {
   }));
 }
 
-export async function readVotes(): Promise<Vote[]> {
+async function readVotesFromApi(): Promise<Vote[]> {
   ensureSheetId();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
@@ -272,6 +281,10 @@ export async function readVotes(): Promise<Vote[]> {
   }
 
   return votes;
+}
+
+export async function readVotes(): Promise<Vote[]> {
+  return cachedSheetData('Votes', 'votes-a-g', readVotesFromApi);
 }
 
 export { VOTE_SHEET_HEADERS };

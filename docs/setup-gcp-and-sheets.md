@@ -39,7 +39,17 @@ The `Votes` tab stores one row per villament per poll:
 
 Re-run `npm run seed:sheets` after upgrading if your sheet still has the older 5-column layout. Existing rows without Tower/Villament columns are parsed from `Flat Number` when possible.
 
-## 3) Config tab seed values
+## 3) Sheet read cache (portal performance)
+
+Google Sheet reads are cached on the server **per tab** (Users, Polls, Votes, Announcements, etc.) using Next.js data cache tags. The cache is **shared for all residents** — not per user.
+
+- **TTL:** 1 hour fallback (`SHEET_CACHE_MAX_AGE_SECONDS` in `src/lib/sheet-cache.ts`).
+- **Invalidation:** Any portal write via `appendRow` / `updateRow` clears that tab’s cache immediately (`invalidateSheetCache`).
+- **Assumption:** Data changes only through the portal (not manual sheet edits). If you edit the spreadsheet directly, restart the Vercel deployment or wait for the fallback TTL.
+
+Writes that touch multiple tabs invalidate each tab (e.g. suggestion upvote updates both `Suggestions` and `Suggestion Upvotes`).
+
+## 4) Config tab seed values
 
 Insert rows in `Config` sheet:
 
@@ -51,11 +61,11 @@ Insert rows in `Config` sheet:
 - Quick Link 2 URL
 - Welcome Message
 
-## 4) Environment
+## 5) Environment
 
 Copy `.env.example` to `.env.local` and fill all values.
 
-## 5) Local run
+## 6) Local run
 
 ```bash
 npm run dev
