@@ -48,14 +48,14 @@ export default function SuggestionsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-6 py-8 sm:px-8 lg:px-10">
         <PageHeader
           title="Suggestions Forum"
           description="Share your ideas for community improvements and support suggestions from fellow residents."
           imageSrc="/images/hero-canopy.jpg"
         />
 
-        <div className="mb-6 space-y-3">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <Filter className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
             {categories.map((category) => (
@@ -70,7 +70,7 @@ export default function SuggestionsPage() {
             ))}
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
             <span className="shrink-0 text-sm text-muted-foreground">Sort by:</span>
             <button
               type="button"

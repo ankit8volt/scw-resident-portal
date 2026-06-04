@@ -100,6 +100,8 @@ export interface Poll {
 export interface Vote {
   id: string;
   pollQuestion: string;
+  tower: string;
+  villamentNumber: string;
   flatNumber: string;
   voterEmail: string;
   voteChosen: string;

@@ -6,6 +6,7 @@ import {
   pickCanonicalUser,
   USER_SHEET_HEADERS,
 } from '@/lib/user-sheet';
+import { parseVoteSheetRow, VOTE_SHEET_HEADERS } from '@/lib/vote-residence';
 import type {
   Announcement,
   AuditLog,
@@ -245,16 +246,35 @@ export async function readPolls(): Promise<Poll[]> {
 }
 
 export async function readVotes(): Promise<Vote[]> {
-  const rows = await readSheetRows('Votes');
-  return rows.map((r, idx) => ({
-    id: String(idx + 2),
-    pollQuestion: toStr(r[0]),
-    flatNumber: toStr(r[1]),
-    voterEmail: toStr(r[2]),
-    voteChosen: toStr(r[3]),
-    dateTime: toStr(r[4]),
-  }));
+  ensureSheetId();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: 'Votes!A:G',
+  });
+
+  const rows = res.data.values ?? [];
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const headers = rows[0].map((cell) => toStr(cell));
+  const votes: Vote[] = [];
+
+  for (let index = 1; index < rows.length; index += 1) {
+    const row = rows[index] ?? [];
+    if (rowIsEmpty(row)) {
+      continue;
+    }
+    const vote = parseVoteSheetRow(row, index + 1, headers);
+    if (vote) {
+      votes.push(vote);
+    }
+  }
+
+  return votes;
 }
+
+export { VOTE_SHEET_HEADERS };
 
 export async function readDocuments(): Promise<DocumentItem[]> {
   const rows = await readSheetRows('Documents');

@@ -30,6 +30,14 @@
   --chart-4: #a67c52;
   --chart-5: #6b8e4e;
   --radius: 0.75rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #2d3319;
+  --sidebar-primary: #4a7c4e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f4f1ed;
+  --sidebar-accent-foreground: #2d3319;
+  --sidebar-border: #e8e4df;
+  --sidebar-ring: #4a7c4e;
 }
 
 @theme inline {

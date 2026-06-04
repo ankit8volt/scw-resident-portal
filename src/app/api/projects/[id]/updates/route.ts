@@ -1,6 +1,7 @@
 import {
   appendAuditLog,
   appendRow,
+  getUserByEmail,
   readProjectUpdates,
   readProjects,
 } from '@/lib/sheets';
@@ -21,7 +22,13 @@ export async function GET(
       return Response.json({ error: 'Project not found' }, { status: 404 });
     }
     const updates = await readProjectUpdates();
-    const filtered = updates.filter((item) => item.projectName === project.name);
+    const filtered = updates
+      .filter((item) => item.projectName === project.name)
+      .sort((a, b) => {
+        const aTime = new Date(a.date || a.postedOn).valueOf();
+        const bTime = new Date(b.date || b.postedOn).valueOf();
+        return bTime - aTime;
+      });
     return Response.json(filtered);
   } catch (error) {
     return Response.json(
@@ -50,24 +57,33 @@ export async function POST(
     }
 
     const payload = (await request.json()) as {
-      updateDetails: string;
-      photoLink: string;
-      date: string;
+      updateDetails?: string;
+      photoLink?: string;
     };
+
+    const updateDetails = payload.updateDetails?.trim() ?? '';
+    if (!updateDetails) {
+      return Response.json({ error: 'Update details are required' }, { status: 400 });
+    }
+
+    const profile = await getUserByEmail(session.user.email!);
+    const postedBy =
+      profile?.name?.trim() || session.user.name?.trim() || session.user.email!;
+    const now = new Date().toISOString();
 
     await appendRow('Project Updates', [
       project.name,
-      payload.updateDetails,
-      payload.photoLink,
-      payload.date || new Date().toISOString(),
-      session.user.email!,
-      new Date().toISOString(),
+      updateDetails,
+      payload.photoLink?.trim() ?? '',
+      now,
+      postedBy,
+      now,
     ]);
 
     await appendAuditLog(
       session.user.email!,
       'PROJECT_UPDATE_ADD',
-      `${project.name}: ${payload.updateDetails}`,
+      `${project.name}: ${updateDetails}`,
     );
 
     return Response.json({ ok: true });

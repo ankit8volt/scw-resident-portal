@@ -1,7 +1,7 @@
 'use client';
 
 import { Calendar, CheckCircle2, Users, Vote } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -12,9 +12,11 @@ import type { Poll } from '@/types';
 
 type VoteState = {
   hasVoted: boolean;
+  villamentHasVoted?: boolean;
   canViewResults: boolean;
   totalVotes?: number;
   results?: Record<string, number>;
+  error?: string;
 };
 
 function formatShortDate(value: string) {
@@ -36,22 +38,58 @@ export default function PollsPage() {
   const [voteState, setVoteState] = useState<Record<string, VoteState>>({});
   const [actionPollId, setActionPollId] = useState('');
   const [actionType, setActionType] = useState<'vote' | 'results' | ''>('');
+  const [voteErrors, setVoteErrors] = useState<Record<string, string>>({});
 
   const activePolls = (data || []).filter((poll) => poll.status === 'Open');
   const closedPolls = (data || []).filter((poll) => poll.status !== 'Open');
 
+  async function refreshVoteState(pollId: string) {
+    const response = await fetch(`/api/votes?pollId=${pollId}`);
+    const payload = (await response.json()) as VoteState & { error?: string };
+    if (!response.ok) {
+      return;
+    }
+    setVoteState((prev) => ({ ...prev, [pollId]: payload }));
+  }
+
+  useEffect(() => {
+    if (!data?.length) {
+      return;
+    }
+    data.forEach((poll) => {
+      void refreshVoteState(poll.id);
+    });
+  }, [data]);
+
   async function castVote(pollId: string) {
     const choice = selected[pollId];
     if (!choice) return;
+    setVoteErrors((prev) => {
+      const next = { ...prev };
+      delete next[pollId];
+      return next;
+    });
     setActionPollId(pollId);
     setActionType('vote');
     try {
-      await fetch('/api/votes', {
+      const response = await fetch('/api/votes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pollId, voteChosen: [choice] }),
       });
-      await loadResults(pollId, false);
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+        setVoteErrors((prev) => ({
+          ...prev,
+          [pollId]: payload?.error || 'Failed to submit vote.',
+        }));
+        await refreshVoteState(pollId);
+        return;
+      }
+
+      await refreshVoteState(pollId);
+      await mutate();
     } finally {
       setActionPollId('');
       setActionType('');
@@ -64,9 +102,7 @@ export default function PollsPage() {
       setActionType('results');
     }
     try {
-      const response = await fetch(`/api/votes?pollId=${pollId}`);
-      const payload = (await response.json()) as VoteState;
-      setVoteState((prev) => ({ ...prev, [pollId]: payload }));
+      await refreshVoteState(pollId);
       await mutate();
     } finally {
       if (trackLoading) {
@@ -78,7 +114,7 @@ export default function PollsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-6 py-8 sm:px-8 lg:px-10">
         <PageHeader
           title="Polls & Voting"
           description="Participate in community decisions and have your voice heard on important matters."
@@ -98,6 +134,7 @@ export default function PollsPage() {
                   poll={poll}
                   selected={selected[poll.id]}
                   voteState={voteState[poll.id]}
+                  voteError={voteErrors[poll.id]}
                   voting={actionPollId === poll.id && actionType === 'vote'}
                   loadingResults={actionPollId === poll.id && actionType === 'results'}
                   onSelect={(value) => setSelected((prev) => ({ ...prev, [poll.id]: value }))}
@@ -141,6 +178,7 @@ function PollCard({
   poll,
   selected,
   voteState,
+  voteError,
   voting,
   loadingResults,
   onSelect,
@@ -150,6 +188,7 @@ function PollCard({
   poll: Poll;
   selected?: string;
   voteState?: VoteState;
+  voteError?: string;
   voting?: boolean;
   loadingResults?: boolean;
   onSelect: (value: string) => void;
@@ -159,6 +198,7 @@ function PollCard({
   const options = pollOptions(poll);
   const showResults = voteState?.canViewResults;
   const totalVotes = voteState?.totalVotes || 0;
+  const votingBlocked = Boolean(voteState?.hasVoted || voteState?.villamentHasVoted);
 
   return (
     <article className="rounded-xl border border-border bg-white p-6 shadow-sm">
@@ -193,6 +233,7 @@ function PollCard({
             <button
               key={option}
               type="button"
+              disabled={votingBlocked}
               onClick={() => onSelect(option)}
               className={cn(
                 'flex w-full items-center gap-3 rounded-lg border-2 p-4 transition-all',
@@ -215,11 +256,22 @@ function PollCard({
         })}
       </div>
 
+      {voteState?.villamentHasVoted && !showResults ? (
+        <p className="mt-4 rounded-lg border border-accent/30 bg-accent/10 px-4 py-3 text-sm text-foreground">
+          Your villament has already submitted a vote for this poll. Only one vote per tower and
+          villament number is allowed.
+        </p>
+      ) : null}
+
+      {voteError ? (
+        <p className="mt-4 text-sm text-destructive">{voteError}</p>
+      ) : null}
+
       {!showResults ? (
         <div className="mt-4 flex flex-wrap gap-2">
           <Button
             onClick={onVote}
-            disabled={!selected || voting || loadingResults}
+            disabled={!selected || voting || loadingResults || votingBlocked}
             loading={voting}
             loadingText="Submitting vote…"
           >

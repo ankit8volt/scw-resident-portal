@@ -23,6 +23,22 @@ npm run validate:sheets
 
 `validate:sheets` adds dropdown data validation on enum columns (Role, Status, Category, etc.) for rows 2–5000.
 
+### Votes sheet columns
+
+The `Votes` tab stores one row per villament per poll:
+
+| Column | Purpose |
+|--------|---------|
+| Poll Question | Which poll |
+| Tower | Voter residence tower (dedupe key) |
+| Villament Number | Voter residence unit (dedupe key) |
+| Flat Number | Display label (e.g. `6-203`) |
+| Voter Email | Who submitted |
+| Vote Chosen | Selected option(s) |
+| Date & Time | When recorded |
+
+Re-run `npm run seed:sheets` after upgrading if your sheet still has the older 5-column layout. Existing rows without Tower/Villament columns are parsed from `Flat Number` when possible.
+
 ## 3) Config tab seed values
 
 Insert rows in `Config` sheet:

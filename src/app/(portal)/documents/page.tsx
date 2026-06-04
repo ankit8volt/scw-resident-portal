@@ -56,7 +56,7 @@ export default function DocumentsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-6 py-8 sm:px-8 lg:px-10">
         <PageHeader
           title="Document Library"
           description="Access meeting minutes, financial reports, bylaws, and other community documents."

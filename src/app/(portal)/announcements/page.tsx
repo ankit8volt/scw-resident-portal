@@ -60,7 +60,7 @@ export default function AnnouncementsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-6 py-8 sm:px-8 lg:px-10">
         <PageHeader
           title="Announcements"
           description="Stay updated with the latest news, notices, and important information from the RWA committee."

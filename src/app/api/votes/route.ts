@@ -1,5 +1,25 @@
-import { appendRow, readPolls, readUsers, readVotes } from '@/lib/sheets';
+import { appendRow, getUserByEmail, readPolls, readVotes } from '@/lib/sheets';
+import { formatResidenceFlatNumber, formatResidenceLabel, hasCompleteResidence } from '@/lib/residence-options';
 import { hasCommitteeAccess, requireSession } from '@/lib/session';
+import {
+  emailAlreadyVotedOnPoll,
+  residenceVoteKey,
+  villamentAlreadyVotedOnPoll,
+} from '@/lib/vote-residence';
+
+function voterResidenceFromSession(
+  user: { tower: string; villamentNumber: string; flatNumber: string } | undefined,
+  session: { user: { tower?: string; villamentNumber?: string; flatNumber?: string } },
+) {
+  const tower = user?.tower || session.user.tower || '';
+  const villamentNumber = user?.villamentNumber || session.user.villamentNumber || '';
+  const flatNumber =
+    user?.flatNumber ||
+    session.user.flatNumber ||
+    formatResidenceFlatNumber(tower, villamentNumber);
+
+  return { tower, villamentNumber, flatNumber };
+}
 
 export async function GET(request: Request) {
   try {
@@ -19,9 +39,21 @@ export async function GET(request: Request) {
     const votes = await readVotes();
     const filteredVotes = votes.filter((vote) => vote.pollQuestion === poll.question);
 
-    const hasVoted = filteredVotes.some(
-      (vote) => vote.voterEmail.toLowerCase() === session.user.email!.toLowerCase(),
+    const user = await getUserByEmail(session.user.email!);
+    const residence = voterResidenceFromSession(user, session);
+    const residenceKey = residenceVoteKey(residence);
+
+    const hasVotedByEmail = emailAlreadyVotedOnPoll(
+      filteredVotes,
+      poll.question,
+      session.user.email!,
     );
+    const villamentHasVoted = villamentAlreadyVotedOnPoll(
+      filteredVotes,
+      poll.question,
+      residenceKey,
+    );
+    const hasVoted = hasVotedByEmail || villamentHasVoted;
 
     const canViewResults =
       session.user.role === 'SuperAdmin' ||
@@ -33,7 +65,12 @@ export async function GET(request: Request) {
           : hasCommitteeAccess(session.user.role);
 
     if (!canViewResults) {
-      return Response.json({ hasVoted, results: [], canViewResults: false });
+      return Response.json({
+        hasVoted,
+        villamentHasVoted,
+        results: [],
+        canViewResults: false,
+      });
     }
 
     const counts = filteredVotes.reduce<Record<string, number>>((acc, vote) => {
@@ -46,6 +83,7 @@ export async function GET(request: Request) {
 
     return Response.json({
       hasVoted,
+      villamentHasVoted,
       canViewResults: true,
       totalVotes: filteredVotes.length,
       results: counts,
@@ -76,29 +114,42 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Poll is not open' }, { status: 400 });
     }
 
-    const users = await readUsers();
-    const user = users.find(
-      (item) => item.email.toLowerCase() === session.user.email!.toLowerCase(),
-    );
+    const user = await getUserByEmail(session.user.email!);
+    const residence = voterResidenceFromSession(user, session);
 
-    const flatNumber = user?.flatNumber || session.user.flatNumber;
-    if (!flatNumber) {
-      return Response.json({ error: 'Flat number missing for voter' }, { status: 400 });
+    if (!hasCompleteResidence(residence.tower, residence.villamentNumber)) {
+      return Response.json(
+        {
+          error:
+            'Your tower and villament number must be on file before you can vote. Contact the RWA if this is incorrect.',
+        },
+        { status: 400 },
+      );
     }
 
+    const residenceKey = residenceVoteKey(residence);
     const votes = await readVotes();
-    const duplicate = votes.find(
-      (vote) =>
-        vote.pollQuestion === poll.question &&
-        vote.voterEmail.toLowerCase() === session.user.email!.toLowerCase(),
-    );
-    if (duplicate) {
-      return Response.json({ error: 'Vote already submitted' }, { status: 409 });
+    const pollVotes = votes.filter((vote) => vote.pollQuestion === poll.question);
+
+    if (emailAlreadyVotedOnPoll(pollVotes, poll.question, session.user.email!)) {
+      return Response.json({ error: 'You have already voted on this poll.' }, { status: 409 });
+    }
+
+    if (villamentAlreadyVotedOnPoll(pollVotes, poll.question, residenceKey)) {
+      const label = formatResidenceLabel(residence.tower, residence.villamentNumber);
+      return Response.json(
+        {
+          error: `A vote has already been submitted for ${label}. Only one vote per villament is allowed, even if multiple residents share the login.`,
+        },
+        { status: 409 },
+      );
     }
 
     await appendRow('Votes', [
       poll.question,
-      flatNumber,
+      residence.tower,
+      residence.villamentNumber,
+      residence.flatNumber,
       session.user.email!,
       payload.voteChosen.join(', '),
       new Date().toISOString(),

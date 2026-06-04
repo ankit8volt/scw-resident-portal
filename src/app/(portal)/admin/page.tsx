@@ -45,7 +45,7 @@ export default function AdminPage() {
 
   if (loadError) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-6 py-8 sm:px-8 lg:px-10">
         <p className="text-sm text-muted-foreground">
           This page is available only to Super Admin users.
         </p>
@@ -55,7 +55,7 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-6 py-8 sm:px-8 lg:px-10">
         <PageHeader
           title="Admin Panel"
           description="Pending approvals and user role management for committee and super admins."

@@ -78,7 +78,15 @@ const headersBySheet: Record<string, string[]> = {
     'Created By',
     'Created On',
   ],
-  Votes: ['Poll Question', 'Flat Number', 'Voter Email', 'Vote Chosen', 'Date & Time'],
+  Votes: [
+    'Poll Question',
+    'Tower',
+    'Villament Number',
+    'Flat Number',
+    'Voter Email',
+    'Vote Chosen',
+    'Date & Time',
+  ],
   Documents: [
     'Document Title',
     'Category',

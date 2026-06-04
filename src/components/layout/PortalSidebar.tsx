@@ -9,6 +9,7 @@ import {
   Home,
   Lightbulb,
   Shield,
+  Sparkles,
   Vote,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -16,6 +17,7 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
 import { BrandLogo } from '@/components/layout/BrandLogo';
+import { SIDEBAR_GRID_PATTERN } from '@/lib/ui-patterns';
 import { cn } from '@/lib/utils';
 
 const navigation = [
@@ -45,30 +47,41 @@ export function PortalSidebar({ showAdmin }: PortalSidebarProps) {
     <>
       <div
         className={cn(
-          'fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-border bg-white transition-all duration-300 lg:flex',
-          collapsed ? 'w-20' : 'w-64',
+          'fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-border bg-gradient-to-b from-white via-white to-primary/5 shadow-xl transition-all duration-300 lg:flex',
+          collapsed ? 'w-20' : 'w-72',
         )}
       >
-        <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex h-16 items-center justify-between border-b border-border px-4">
+        <div
+          className="absolute inset-0 opacity-40"
+          style={{ backgroundImage: SIDEBAR_GRID_PATTERN }}
+          aria-hidden
+        />
+
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <div className="flex h-20 items-center justify-between border-b border-border/50 bg-gradient-to-r from-primary/5 to-transparent px-5">
             {!collapsed ? (
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                  <BrandLogo variant="onPrimary" />
+                <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg">
+                  <BrandLogo variant="onPrimary" iconClassName="h-7 w-7" />
+                  <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-white bg-chart-2" />
                 </div>
                 <div>
-                  <h1 className="text-sm font-semibold text-foreground">SCW Villaments</h1>
-                  <p className="text-xs text-muted-foreground">Community Portal</p>
+                  <h1 className="text-base font-semibold text-foreground">SCW Villaments</h1>
+                  <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Sparkles className="h-3 w-3" />
+                    Community Portal
+                  </p>
                 </div>
               </div>
             ) : (
-              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                <BrandLogo variant="onPrimary" />
+              <div className="relative mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg">
+                <BrandLogo variant="onPrimary" iconClassName="h-7 w-7" />
+                <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-white bg-chart-2" />
               </div>
             )}
           </div>
 
-          <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+          <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-6">
             {links.map((item) => {
               const active = isActive(item.href);
               const Icon = item.icon;
@@ -78,24 +91,39 @@ export function PortalSidebar({ showAdmin }: PortalSidebarProps) {
                   href={item.href}
                   title={collapsed ? item.name : undefined}
                   className={cn(
-                    'group flex items-center gap-3 rounded-lg px-3 py-3 transition-colors',
+                    'group relative flex items-center gap-3 rounded-xl px-4 py-3.5 transition-all duration-200',
                     active
-                      ? 'bg-primary text-white'
-                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
+                      ? 'bg-gradient-to-r from-primary to-primary/90 text-white shadow-lg shadow-primary/30'
+                      : 'text-muted-foreground hover:bg-primary/5 hover:text-primary',
                   )}
                 >
-                  <Icon className="h-5 w-5 shrink-0" />
+                  {active ? (
+                    <div className="absolute top-1/2 left-0 h-8 w-1 -translate-y-1/2 rounded-r-full bg-white" />
+                  ) : null}
+                  <div
+                    className={cn(
+                      'flex h-9 w-9 items-center justify-center rounded-lg transition-all',
+                      active ? 'bg-white/20' : 'bg-transparent group-hover:bg-primary/10',
+                    )}
+                  >
+                    <Icon className="h-5 w-5 shrink-0" />
+                  </div>
                   {!collapsed ? <span className="text-sm font-medium">{item.name}</span> : null}
+                  {!collapsed && !active ? (
+                    <div className="ml-auto opacity-0 transition-opacity group-hover:opacity-100">
+                      <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />
+                    </div>
+                  ) : null}
                 </Link>
               );
             })}
           </nav>
 
-          <div className="border-t border-border p-3">
+          <div className="border-t border-border/50 bg-gradient-to-t from-primary/5 to-transparent p-4">
             <button
               type="button"
               onClick={() => setCollapsed(!collapsed)}
-              className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              className="flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-muted-foreground shadow-sm transition-all hover:bg-primary/10 hover:text-primary hover:shadow"
               title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               {collapsed ? (
@@ -103,7 +131,7 @@ export function PortalSidebar({ showAdmin }: PortalSidebarProps) {
               ) : (
                 <>
                   <ChevronLeft className="h-5 w-5" />
-                  <span className="text-sm">Collapse</span>
+                  <span>Collapse Menu</span>
                 </>
               )}
             </button>
@@ -121,7 +149,7 @@ export function PortalSidebar({ showAdmin }: PortalSidebarProps) {
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  'flex min-w-0 flex-col items-center gap-1 rounded-lg px-2 py-2 transition-colors',
+                  'flex min-w-0 flex-col items-center gap-1 rounded-lg px-3 py-2 transition-colors',
                   active ? 'text-primary' : 'text-muted-foreground',
                 )}
               >

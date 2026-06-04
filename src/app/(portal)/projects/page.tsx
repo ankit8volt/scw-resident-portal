@@ -1,10 +1,11 @@
 'use client';
 
-import { Calendar, FolderOpen } from 'lucide-react';
+import { AlertCircle, Calendar, CheckCircle2, Clock, FolderOpen, Pause } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import useSWR from 'swr';
 
+import { ProjectUpdatesSection } from '@/components/features/ProjectUpdatesSection';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { fetcher } from '@/hooks/fetcher';
@@ -13,6 +14,14 @@ import { cn } from '@/lib/utils';
 import type { Project } from '@/types';
 
 const categories = ['All', 'Infrastructure', 'Amenities', 'Maintenance', 'Events', 'Other'] as const;
+
+const projectStatusIcons = {
+  'In Progress': Clock,
+  Completed: CheckCircle2,
+  Planned: AlertCircle,
+  'On Hold': Pause,
+  Archived: Pause,
+} as const;
 
 function formatDate(value: string) {
   if (!value) return '—';
@@ -72,7 +81,7 @@ export default function ProjectsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-6 py-8 sm:px-8 lg:px-10">
         <PageHeader
           title="Project Updates"
           description="Track the progress of ongoing community improvement projects and view completed initiatives."
@@ -105,12 +114,14 @@ export default function ProjectsPage() {
           {filtered.map((project) => {
             const statusStyle =
               projectStatusStyles[project.status] ?? projectStatusStyles.Planned;
+            const StatusIcon =
+              projectStatusIcons[project.status as keyof typeof projectStatusIcons] ?? Clock;
             const isExpanded = expandedId === project.id;
 
             return (
               <article
                 key={project.id}
-                className="overflow-hidden rounded-xl border border-border bg-white"
+                className="overflow-hidden rounded-xl border border-border bg-white shadow-sm"
               >
                 <button
                   type="button"
@@ -123,10 +134,11 @@ export default function ProjectsPage() {
                         <h3 className="text-lg font-semibold text-foreground">{project.name}</h3>
                         <span
                           className={cn(
-                            'rounded-lg border px-3 py-1 text-xs font-medium',
+                            'inline-flex items-center rounded-lg border px-3 py-1 text-xs font-medium',
                             statusStyle,
                           )}
                         >
+                          <StatusIcon className="mr-1 inline h-3 w-3" />
                           {project.status}
                         </span>
                         <span className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
@@ -145,10 +157,11 @@ export default function ProjectsPage() {
                 </button>
 
                 {isExpanded ? (
-                  <div className="border-t border-border bg-secondary/30 px-6 py-4">
-                    <p className="text-sm text-muted-foreground">
-                      View detailed timeline updates on the project detail API when available.
-                    </p>
+                  <div className="border-t border-border bg-secondary/30 px-6 py-6">
+                    <ProjectUpdatesSection
+                      projectId={project.id}
+                      canManage={canManage}
+                    />
                   </div>
                 ) : null}
               </article>
