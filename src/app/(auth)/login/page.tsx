@@ -64,9 +64,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <div className="overflow-hidden rounded-2xl bg-white shadow-2xl">
           <div className="bg-gradient-to-br from-primary to-primary/80 px-8 py-12 text-center">
             <div className="mb-4 flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-lg">
-                <BrandLogo iconClassName="h-10 w-10" />
-              </div>
+              <BrandLogo iconClassName="h-16 w-16 shadow-lg" />
             </div>
             <h1 className="mb-2 font-[family-name:var(--font-display)] text-3xl font-semibold text-white">
               SCW Villaments

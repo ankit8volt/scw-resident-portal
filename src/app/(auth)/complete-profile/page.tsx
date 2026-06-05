@@ -54,9 +54,7 @@ export default function CompleteProfilePage() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-lg rounded-2xl border border-border bg-white p-8 shadow-lg">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-            <BrandLogo variant="onPrimary" />
-          </div>
+          <BrandLogo iconClassName="h-12 w-12 shadow-md" />
           <div>
             <h1 className="text-xl font-semibold text-foreground">Complete your profile</h1>
             <p className="text-sm text-muted-foreground">

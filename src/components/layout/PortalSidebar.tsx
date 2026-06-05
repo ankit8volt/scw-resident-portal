@@ -61,8 +61,8 @@ export function PortalSidebar({ showAdmin }: PortalSidebarProps) {
           <div className="flex h-20 items-center justify-between border-b border-border/50 bg-gradient-to-r from-primary/5 to-transparent px-5">
             {!collapsed ? (
               <div className="flex items-center gap-3">
-                <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg">
-                  <BrandLogo variant="onPrimary" iconClassName="h-7 w-7" />
+                <div className="relative">
+                  <BrandLogo iconClassName="h-12 w-12 shadow-lg" />
                   <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-white bg-chart-2" />
                 </div>
                 <div>
@@ -74,8 +74,8 @@ export function PortalSidebar({ showAdmin }: PortalSidebarProps) {
                 </div>
               </div>
             ) : (
-              <div className="relative mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 shadow-lg">
-                <BrandLogo variant="onPrimary" iconClassName="h-7 w-7" />
+              <div className="relative mx-auto">
+                <BrandLogo iconClassName="h-12 w-12 shadow-lg" />
                 <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-white bg-chart-2" />
               </div>
             )}

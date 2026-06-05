@@ -1,0 +1,29 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="80" fill="url(#bgGradient)" />
+  <defs>
+    <linearGradient id="bgGradient" x1="0" y1="0" x2="512" y2="512">
+      <stop offset="0%" stop-color="#2d5016" />
+      <stop offset="100%" stop-color="#4a7c29" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(256, 256)">
+    <text
+      x="0"
+      y="0"
+      font-family="Arial, sans-serif"
+      font-size="180"
+      font-weight="700"
+      fill="white"
+      text-anchor="middle"
+      dominant-baseline="central"
+      letter-spacing="-5"
+    >
+      SCW
+    </text>
+  </g>
+  <path
+    d="M 380,400 Q 400,380 420,400 Q 400,420 380,400 Z"
+    fill="white"
+    opacity="0.3"
+  />
+</svg>
